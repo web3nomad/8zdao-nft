@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.11;
 
-import "solmate/tokens/ERC721.sol";
-import "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "openzeppelin-contracts/contracts/utils/Base64.sol";
+import "./ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NFT8ZDAO is ERC721 {
-    uint256 public currentTokenId;
+contract NFT8ZDAO is ERC721, Ownable {
+    address public renderer;
+    uint256 public totalSupply;
 
     string[] private TIAN_GAN = [
         unicode"甲",
@@ -36,38 +36,53 @@ contract NFT8ZDAO is ERC721 {
         unicode"丑"
     ];
 
-    constructor() ERC721("8Z DAO", "8Z") {}
-
-    function mintTo(address recipient) public payable returns (uint256) {
-        require(currentTokenId < 60, "Only 60 8Z NFT");
-        uint256 newItemId = ++currentTokenId;
-        _safeMint(recipient, newItemId);
-        return newItemId;
+    constructor(address renderer_) ERC721("8Z DAO", "8ZDAO") {
+        renderer = renderer_;
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function setRenderer(address renderer_) external onlyOwner {
+        renderer = renderer_;
+    }
+
+    function mint() public payable {
+        require(totalSupply < 70, "Only 70 8ZDAO NFT");
+        require(msg.value == 0.1 ether, "Incorrect ether value");
+        _safeMint(msg.sender, ++totalSupply);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_ownerOf[tokenId] != address(0), "ERC721Metadata: URI query for nonexistent token");
-        string memory tiangan = TIAN_GAN[(tokenId - 1) % 10];
-        string memory dizhi = DI_ZHI[((tokenId - 1) + 10) % 12];
-        string memory word = string(abi.encodePacked(tiangan, dizhi));
-        string[6] memory parts;
-        parts[0] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: sans-serif; font-size: 128px; text-anchor: middle; dominant-baseline: middle; }</style><rect width="100%" height="100%" fill="black" />';
-        parts[1] = '<text x="50%" y="50%" class="base" style="transform:translateX(-64px);">';
-        parts[2] = tiangan;
-        parts[3] = '</text><text x="50%" y="50%" class="base" style="transform:translateX(64px);">';
-        parts[4] = dizhi;
-        parts[5] = '</text></svg>';
-        string memory svg = string(abi.encodePacked(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]));
-        string memory json = Base64.encode(bytes(string(abi.encodePacked(
-            '{"name": "',
-            word,
-            '", "description": "8Z #',
-            Strings.toString(tokenId),
-            '", "image": "data:image/svg+xml;base64,',
-            Base64.encode(bytes(svg)),
-            '"}'
-        ))));
-        string memory output = string(abi.encodePacked('data:application/json;base64,', json));
-        return output;
+        string[] memory words;
+        string memory name;
+        if (tokenId <= 10) {
+            words = new string[](1);
+            words[0] = TIAN_GAN[(tokenId - 1) % 10];
+            name = words[0];
+        } else {
+            words = new string[](2);
+            words[0] = TIAN_GAN[(tokenId - 11) % 10];
+            words[1] = DI_ZHI[((tokenId - 11) + 10) % 12];
+            name = string(abi.encodePacked(words[0], words[1]));
+        }
+        return IRenderer(renderer).renderStrings(tokenId, name, words);
     }
+
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(msg.sender).transfer(balance);
+    }
+
+    function withdrawERC20(IERC20 token) external onlyOwner {
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(msg.sender, balance);
+    }
+}
+
+interface IRenderer {
+    function renderStrings(uint256, string memory, string[] memory) external view returns (string memory);
+}
+
+abstract contract IERC20 {
+    mapping(address => uint256) public balanceOf;
+    function transfer(address to, uint256 amount) public virtual returns (bool);
 }
