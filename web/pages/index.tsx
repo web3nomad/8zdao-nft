@@ -4,15 +4,22 @@ import clsx from 'clsx'
 import Layout from '@/components/layout'
 import { useEffect, useState, useCallback } from 'react'
 import ConnectButton from '@/components/connect-button'
-import { useRecoilValue } from 'recoil'
-import { walletAddressState } from '@/lib/recoil/wallet'
+import { useRecoilState, useRecoilValue } from 'recoil'
+import { chaineIDState, walletAddressState } from '@/lib/recoil/wallet'
+import { switchNetwork } from '@/lib/utils'
 
 const Home: NextLayoutPage = () => {
   const [pendingTx, setPendingTx] = useState('')
   const walletAddress = useRecoilValue(walletAddressState)
+  const [chainID, setChainID] = useRecoilState(chaineIDState)
   const price = 0.1
 
   const mint = useCallback(async () => {
+    if (chainID !== 1) {
+      await switchNetwork('0x1')
+      setChainID(1)
+    }
+
     const provider = new ethers.providers.Web3Provider((global as any).ethereum)
     const signer = provider.getSigner()
 
@@ -31,6 +38,7 @@ const Home: NextLayoutPage = () => {
       setPendingTx(tx.hash)
       await tx.wait()
     } catch (e: any) {
+      if (e.code === 4001) return // User denied transaction signature
       alert('Something went wrong.' + (e.code ? 'Error: ' + e.code : ''))
     }
   }, [])
