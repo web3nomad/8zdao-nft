@@ -5,7 +5,7 @@ import Web3Modal from 'web3modal'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { walletAddressState, chaineIDState, walletAddressShortState } from '@/lib/recoil/wallet'
 import { switchNetwork } from '@/lib/utils'
-import { RoundedButton } from './rounded-button'
+import RoundedButton from './rounded-button'
 
 export default function ConnectButton() {
   const [walletAddress, setWalletAddress] = useRecoilState(walletAddressState)

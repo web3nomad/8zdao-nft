@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import Layout from '@/components/layout'
 import { useEffect, useState, useCallback } from 'react'
 import ConnectButton from '@/components/connect-button'
+import RoundedButton from '@/components/rounded-button'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { chaineIDState, walletAddressState } from '@/lib/recoil/wallet'
 import { contractAddr, price, totalSupply, mintedNumState, isSoldOutState } from '@/lib/recoil/contract'
@@ -27,8 +28,6 @@ const Home: NextLayoutPage = () => {
       setMinted(res.toNumber())
     })
   }, [])
-
-  // TODO get current totalSupply from contract
 
   const mint = useCallback(async () => {
     if (chainID !== 1) {
@@ -60,6 +59,8 @@ const Home: NextLayoutPage = () => {
   }, [minted, chainID])
 
   const Mint = () => {
+    if (!walletAddress) return <></>
+
     if (pendingTx) {
       return <div className='text-center my-8'>
         <div>Your 8ZNFT is being minted</div>
@@ -68,20 +69,22 @@ const Home: NextLayoutPage = () => {
           href={'https://etherscan.io/tx/' + pendingTx} target='_blank' rel='noreferrer'
         >{pendingTx}</a>
       </div>
-    } else if (walletAddress) {
+    }
+
+    if (isSoldOut) {
       return <>
-        <button className={clsx(
-          'border-2 border-white hover:border-white/75 hover:text-white/75',
-          'rounded-full px-16 py-2 mt-8 mb-2 disabled:border-white/75 disabled:text-white/75',
-        )}
-          disabled={isSoldOut}
-          onClick={() => !isSoldOut && mint()}
-        >{isSoldOut ? 'SOLD OUT' : 'MINT 1 8Z'}</button>
-        <span className='text-xs sm:text-sm'>Ξ{price} + gas fee</span>
+        <RoundedButton
+          disabled={true}
+          text='SOLD OUT'
+        /><a className='underline text-xs sm:text-sm'
+          href='https://opensea.io/collection/8zdao' target='_blank' rel='noreferrer'>buy in OpenSea</a>
       </>
     } else {
-      return <></>
+      return <>
+        <RoundedButton onClick={mint} text='MINT 1 8Z' /><span className='text-xs sm:text-sm'>Ξ{price} + gas fee</span>
+      </>
     }
+
   }
 
   return (
