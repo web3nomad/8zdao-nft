@@ -60,11 +60,12 @@ export default function ConnectButton() {
     return <RoundedButton text='Connect Wallet' />
   } else if (walletAddress) {
     return (
-      <div className='fixed top-0 right-0 p-4'>
+      <div className='fixed top-0 right-0 p-4 text-right'>
         <div className='inline-block text-xs sm:text-sm py-1 mx-2'>{walletAddressShort}</div>
         <button className={clsx(
+          'block w-full',
           'hover:text-white/75',
-          'text-xs px-4 py-1 mx-2',
+          'text-xs text-right px-4 py-1 mx-2',
         )} onClick={() => disconnect()}>Disconnect</button>
       </div>
     )
