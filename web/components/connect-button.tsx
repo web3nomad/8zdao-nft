@@ -14,6 +14,10 @@ export default function ConnectButton() {
   const modalRef = useRef<Web3Modal>()
 
   const connect = useCallback(async () => {
+    if (!window.ethereum) {
+      alert('Please install a wallet like MetaMask, or open this page in a browser that supports Ethereum.')
+      return
+    }
     if (!modalRef.current) return
 
     const instance = await modalRef.current.connect()

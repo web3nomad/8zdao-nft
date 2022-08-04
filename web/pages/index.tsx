@@ -35,23 +35,25 @@ const Home: NextLayoutPage = () => {
       setChainID(1)
     }
 
-    const provider = new ethers.providers.Web3Provider((global as any).ethereum)
-    const signer = provider.getSigner()
-
-    const balance = await provider.getBalance(await signer.getAddress())
-    const balanceInEth = parseFloat(ethers.utils.formatEther(balance))
-    if (balanceInEth <= price) {
-      alert('You need at least ' + price + 'ETH + gas fee')
-      return
-    }
-
-    const erc721 = new ethers.Contract(contractAddr, [
-      'function mint() public payable',
-    ], signer)
     try {
+      const provider = new ethers.providers.Web3Provider((global as any).ethereum)
+      const signer = provider.getSigner()
+
+      const balance = await provider.getBalance(await signer.getAddress())
+      const balanceInEth = parseFloat(ethers.utils.formatEther(balance))
+      if (balanceInEth <= price) {
+        alert('You need at least ' + price + 'ETH + gas fee')
+        return
+      }
+
+      const erc721 = new ethers.Contract(contractAddr, [
+        'function mint() public payable',
+      ], signer)
       const tx = await erc721.mint({ value: ethers.utils.parseEther(price + '') })
+
       setPendingTx(tx.hash)
       await tx.wait()
+
     } catch (e: any) {
       if (e.code === 4001) return // User denied transaction signature
       alert('Something went wrong.' + (e.code ? 'Error: ' + e.code : ''))
@@ -91,7 +93,7 @@ const Home: NextLayoutPage = () => {
     <div className='flex-1 w-full flex flex-col items-center justify-center'>
       <ConnectButton />
       <span className='text-xs sm:text-sm'>{minted === undefined
-        ? 'Loading...'
+        ? ''
         : `${minted} / ${totalSupply} minted`
       }</span>
       <Mint />
