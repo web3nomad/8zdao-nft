@@ -2,31 +2,25 @@ import clsx from 'clsx'
 import { useCallback, useEffect, useRef } from 'react'
 import { ethers } from 'ethers'
 import Web3Modal from 'web3modal'
-import { useRecoilState } from 'recoil'
-import { walletAddressState, chaineIDState } from '@/lib/recoil/wallet'
+import { useRecoilState, useRecoilValue } from 'recoil'
+import { walletAddressState, chaineIDState, walletAddressShortState } from '@/lib/recoil/wallet'
 import { switchNetwork } from '@/lib/utils'
-
-// const maskedAddress = (address: string) => address.toLowerCase().replace(/0x(\w{4})\w+(\w{4})/, '0x$1...$2')
-
-const RoundedButton = ({ onClick = () => { }, text }: { onClick?: Function, text: string }) => {
-  return (
-    <button className={clsx(
-      'border-2 border-white hover:border-white/75 hover:text-white/75',
-      'rounded-full px-16 py-2 my-8',
-    )} onClick={() => onClick()}>{text}</button>
-  )
-}
+import RoundedButton from './rounded-button'
 
 export default function ConnectButton() {
   const [walletAddress, setWalletAddress] = useRecoilState(walletAddressState)
+  const walletAddressShort = useRecoilValue(walletAddressShortState)
   const [chainID, setChainID] = useRecoilState(chaineIDState)
   const modalRef = useRef<Web3Modal>()
 
   const connect = useCallback(async () => {
+    if (!window.ethereum) {
+      alert('Please install a wallet like MetaMask, or open this page in a browser that supports Ethereum.')
+      return
+    }
     if (!modalRef.current) return
 
     const instance = await modalRef.current.connect()
-    console.log('connected')
     const provider = new ethers.providers.Web3Provider(instance)
 
     // switch to the right network
@@ -40,7 +34,6 @@ export default function ConnectButton() {
     }
 
     const signer = provider.getSigner()
-    console.log('signed')
     setWalletAddress(await signer.getAddress())
   }, [setChainID, setWalletAddress])
 
@@ -57,7 +50,6 @@ export default function ConnectButton() {
       cacheProvider: true,
       providerOptions: {},
     })
-    console.log('modal created', modalRef.current.cachedProvider)
 
     if (modalRef.current.cachedProvider) {
       connect()
@@ -68,13 +60,14 @@ export default function ConnectButton() {
     return <RoundedButton text='Connect Wallet' />
   } else if (walletAddress) {
     return (
-      <>
-        <div className='inline-block text-xs sm:text-sm py-1 mx-2'>{walletAddress}</div>
+      <div className='fixed top-0 right-0 p-4 text-right'>
+        <div className='inline-block text-xs sm:text-sm py-1 mx-2'>{walletAddressShort}</div>
         <button className={clsx(
+          'block w-full',
           'hover:text-white/75',
-          'text-xs px-4 py-1 mx-2',
+          'text-xs text-right px-4 py-1 mx-2',
         )} onClick={() => disconnect()}>Disconnect</button>
-      </>
+      </div>
     )
   } else {
     return <RoundedButton onClick={connect} text='Connect Wallet' />
